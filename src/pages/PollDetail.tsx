@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import confetti from "canvas-confetti";
 import { useParams, Link } from "react-router-dom";
 import { usePolls } from "@/contexts/PollContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +27,39 @@ const PollDetail = () => {
 
   const poll = getPoll(id!);
   const countdown = useCountdown(poll?.deadline ?? new Date());
+
+  const fireConfetti = useCallback(() => {
+    const duration = 3000;
+    const end = Date.now() + duration;
+    const colors = ["#ff6b35", "#1c9fde", "#ffd700", "#ff4500"];
+
+    const frame = () => {
+      confetti({
+        particleCount: 3,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.7 },
+        colors,
+      });
+      confetti({
+        particleCount: 3,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.7 },
+        colors,
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    };
+    frame();
+
+    // Big burst in the center
+    confetti({
+      particleCount: 100,
+      spread: 100,
+      origin: { y: 0.6 },
+      colors,
+    });
+  }, []);
 
   if (!poll) {
     return (
@@ -83,6 +117,7 @@ const PollDetail = () => {
       if (userWinStake > 0) {
         const payout = (userWinStake / winnerStake) * totalStake;
         toast({ title: `You won ${payout.toFixed(2)} STRK! 🎉` });
+        fireConfetti();
       }
     }
     toast({ title: "Poll resolved ✅", description: `"${poll.options[winner]}" wins!` });
