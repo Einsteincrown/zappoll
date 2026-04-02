@@ -117,6 +117,7 @@ const PollDetail = () => {
       if (userWinStake > 0) {
         const payout = (userWinStake / winnerStake) * totalStake;
         toast({ title: `You won ${payout.toFixed(2)} STRK! 🎉` });
+        fireConfetti();
       }
     }
     toast({ title: "Poll resolved ✅", description: `"${poll.options[winner]}" wins!` });
