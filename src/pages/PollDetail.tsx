@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import confetti from "canvas-confetti";
 import { useParams, Link } from "react-router-dom";
 import { usePolls } from "@/contexts/PollContext";
 import { useAuth } from "@/contexts/AuthContext";
