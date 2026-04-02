@@ -9,14 +9,20 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock, Zap, Trophy, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { STRK } from "@/lib/starkzap";
+import { Amount, fromAddress } from "starkzap";
+
+// Poll contract address (placeholder — in production this would be the real contract)
+const POLL_CONTRACT = "0x0000000000000000000000000000000000000000000000000000000000000001";
 
 const PollDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { getPoll, addStake, resolvePoll } = usePolls();
-  const { user, isConnected, updateBalance } = useAuth();
+  const { user, wallet, isConnected, refreshBalance } = useAuth();
   const [loginOpen, setLoginOpen] = useState(false);
   const [stakeAmount, setStakeAmount] = useState("");
   const [selectedOption, setSelectedOption] = useState<0 | 1 | null>(null);
+  const [staking, setStaking] = useState(false);
 
   const poll = getPoll(id!);
   const countdown = useCountdown(poll?.deadline ?? new Date());
@@ -41,27 +47,41 @@ const PollDetail = () => {
   const userTotal0 = userStakes.filter((s) => s.option === 0).reduce((a, s) => a + s.amount, 0);
   const userTotal1 = userStakes.filter((s) => s.option === 1).reduce((a, s) => a + s.amount, 0);
 
-  const handleStake = () => {
-    if (!isConnected) { setLoginOpen(true); return; }
+  const handleStake = async () => {
+    if (!isConnected || !wallet) { setLoginOpen(true); return; }
     if (selectedOption === null) { toast({ title: "Select an option", variant: "destructive" }); return; }
     const amount = parseFloat(stakeAmount);
     if (!amount || amount <= 0) { toast({ title: "Enter a valid amount", variant: "destructive" }); return; }
     if (amount > user!.strkBalance) { toast({ title: "Insufficient STRK balance", variant: "destructive" }); return; }
-    updateBalance(-amount);
-    addStake(poll.id, user!.id, user!.walletAddress, selectedOption, amount);
-    setStakeAmount("");
-    toast({ title: `Staked ${amount} STRK ⚡`, description: `On "${poll.options[selectedOption]}" — gasless via Starkzap` });
+
+    setStaking(true);
+    try {
+      // Transfer STRK via Starkzap ERC20 module (gasless via Paymaster)
+      const tx = await wallet.transfer(STRK, [
+        { to: fromAddress(POLL_CONTRACT), amount: Amount.parse(String(amount), STRK) },
+      ]);
+      await tx.wait();
+
+      await refreshBalance();
+      addStake(poll.id, user!.id, user!.walletAddress, selectedOption, amount);
+      setStakeAmount("");
+      toast({ title: `Staked ${amount} STRK ⚡`, description: `On "${poll.options[selectedOption]}" — gasless via Starkzap Paymaster` });
+    } catch (err) {
+      console.error("Stake failed:", err);
+      toast({ title: "Transaction failed", description: "Could not stake. Please try again.", variant: "destructive" });
+    } finally {
+      setStaking(false);
+    }
   };
 
   const handleResolve = (winner: 0 | 1) => {
     resolvePoll(poll.id, winner);
-    // Mock payout to winners
+    // Payout logic — in production this would be on-chain
     const winnerStake = poll.stakes.filter((s) => s.option === winner).reduce((a, s) => a + s.amount, 0);
     if (user && winnerStake > 0) {
       const userWinStake = poll.stakes.filter((s) => s.userId === user.id && s.option === winner).reduce((a, s) => a + s.amount, 0);
       if (userWinStake > 0) {
         const payout = (userWinStake / winnerStake) * totalStake;
-        updateBalance(payout);
         toast({ title: `You won ${payout.toFixed(2)} STRK! 🎉` });
       }
     }
@@ -155,8 +175,8 @@ const PollDetail = () => {
                 onChange={(e) => setStakeAmount(e.target.value)}
                 className="bg-muted border-border text-foreground"
               />
-              <Button onClick={handleStake} className="glow-orange shrink-0">
-                <Zap className="h-4 w-4 mr-1" /> Stake
+              <Button onClick={handleStake} disabled={staking} className="glow-orange shrink-0">
+                <Zap className="h-4 w-4 mr-1" /> {staking ? "..." : "Stake"}
               </Button>
             </div>
           </div>

@@ -1,46 +1,79 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { UserProfile } from "@/types/poll";
+import { sdk, STRK } from "@/lib/starkzap";
+import { OnboardStrategy, Amount } from "starkzap";
 
 interface AuthContextType {
   user: UserProfile | null;
+  wallet: any | null;
   isConnected: boolean;
   login: (method: 'email' | 'google' | 'twitter') => Promise<void>;
   logout: () => void;
   updateBalance: (delta: number) => void;
+  refreshBalance: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-const generateAddress = () => {
-  const chars = "0123456789abcdef";
-  let addr = "0x";
-  for (let i = 0; i < 40; i++) addr += chars[Math.floor(Math.random() * 16)];
-  return addr;
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [wallet, setWallet] = useState<any | null>(null);
 
-  const login = useCallback(async (method: 'email' | 'google' | 'twitter') => {
-    // Mock Starkzap social login — silent wallet creation
-    await new Promise((r) => setTimeout(r, 800));
-    const id = crypto.randomUUID();
-    setUser({
-      id,
-      walletAddress: generateAddress(),
-      loginMethod: method,
-      strkBalance: 100, // Mock initial balance
-    });
+  const refreshBalance = useCallback(async () => {
+    if (!wallet) return;
+    try {
+      const balance = await wallet.balanceOf(STRK);
+      const balanceNum = parseFloat(balance.toUnit());
+      setUser((prev) => prev ? { ...prev, strkBalance: balanceNum } : null);
+    } catch (err) {
+      console.error("Failed to refresh balance:", err);
+    }
+  }, [wallet]);
+
+  const login = useCallback(async (_method: 'email' | 'google' | 'twitter') => {
+    try {
+      // Use Cartridge Controller for social login via Starkzap Wallets module
+      const policies = [
+        { target: STRK.address, method: "transfer" },
+      ];
+
+      const onboard = await sdk.onboard({
+        strategy: OnboardStrategy.Cartridge,
+        cartridge: { policies },
+        deploy: "if_needed",
+      });
+
+      const w = onboard.wallet;
+      setWallet(w);
+
+      // Read real STRK balance
+      const balance = await w.balanceOf(STRK);
+      const balanceNum = parseFloat(balance.toUnit());
+      const address = w.address || "0x...";
+
+      setUser({
+        id: typeof address === "string" ? address : String(address),
+        walletAddress: typeof address === "string" ? address : String(address),
+        loginMethod: _method,
+        strkBalance: balanceNum,
+      });
+    } catch (err) {
+      console.error("Starkzap login failed:", err);
+      throw err;
+    }
   }, []);
 
-  const logout = useCallback(() => setUser(null), []);
+  const logout = useCallback(() => {
+    setUser(null);
+    setWallet(null);
+  }, []);
 
   const updateBalance = useCallback((delta: number) => {
     setUser((prev) => prev ? { ...prev, strkBalance: prev.strkBalance + delta } : null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isConnected: !!user, login, logout, updateBalance }}>
+    <AuthContext.Provider value={{ user, wallet, isConnected: !!user, login, logout, updateBalance, refreshBalance }}>
       {children}
     </AuthContext.Provider>
   );

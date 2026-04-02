@@ -13,20 +13,26 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { STRK } from "@/lib/starkzap";
+import { Amount, fromAddress } from "starkzap";
+
+// Poll contract address (placeholder — in production this would be the real contract)
+const POLL_CONTRACT = "0x0000000000000000000000000000000000000000000000000000000000000001";
 
 const CreatePoll = () => {
-  const { user, isConnected, updateBalance } = useAuth();
+  const { user, wallet, isConnected, refreshBalance } = useAuth();
   const { createPoll } = usePolls();
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const [question, setQuestion] = useState("");
   const [option1, setOption1] = useState("");
   const [option2, setOption2] = useState("");
   const [deadline, setDeadline] = useState<Date>();
 
-  const handleSubmit = () => {
-    if (!isConnected) {
+  const handleSubmit = async () => {
+    if (!isConnected || !wallet) {
       setLoginOpen(true);
       return;
     }
@@ -38,10 +44,26 @@ const CreatePoll = () => {
       toast({ title: "Insufficient balance", description: "You need at least 1 STRK to create a poll.", variant: "destructive" });
       return;
     }
-    updateBalance(-1);
-    const id = createPoll(question.trim(), [option1.trim(), option2.trim()], deadline, user!.id, user!.walletAddress);
-    toast({ title: "Poll created! ⚡", description: "1 STRK deposit taken. Gasless via Starkzap Paymaster." });
-    navigate(`/poll/${id}`);
+
+    setSubmitting(true);
+    try {
+      // Transfer 1 STRK creation deposit via Starkzap ERC20 module (gasless via Paymaster)
+      const tx = await wallet.transfer(STRK, [
+        { to: fromAddress(POLL_CONTRACT), amount: Amount.parse("1", STRK) },
+      ]);
+      await tx.wait();
+
+      await refreshBalance();
+
+      const id = createPoll(question.trim(), [option1.trim(), option2.trim()], deadline, user!.id, user!.walletAddress);
+      toast({ title: "Poll created! ⚡", description: "1 STRK deposit taken. Gasless via Starkzap Paymaster." });
+      navigate(`/poll/${id}`);
+    } catch (err) {
+      console.error("Create poll failed:", err);
+      toast({ title: "Transaction failed", description: "Could not create poll. Please try again.", variant: "destructive" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -113,9 +135,9 @@ const CreatePoll = () => {
           </div>
         </div>
 
-        <Button onClick={handleSubmit} className="w-full h-12 text-base font-semibold glow-orange">
+        <Button onClick={handleSubmit} disabled={submitting} className="w-full h-12 text-base font-semibold glow-orange">
           <Zap className="h-5 w-5 mr-2" />
-          Create Poll
+          {submitting ? "Submitting..." : "Create Poll"}
         </Button>
       </div>
 

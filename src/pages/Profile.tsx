@@ -1,16 +1,24 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { usePolls } from "@/contexts/PollContext";
 import { LoginDialog } from "@/components/LoginDialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Zap, Copy, LogOut, CheckCircle } from "lucide-react";
+import { Zap, Copy, LogOut, CheckCircle, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 
 const Profile = () => {
-  const { user, isConnected, logout } = useAuth();
+  const { user, isConnected, logout, refreshBalance } = useAuth();
   const { polls } = usePolls();
   const [loginOpen, setLoginOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Refresh balance on mount
+  useEffect(() => {
+    if (isConnected) {
+      refreshBalance();
+    }
+  }, [isConnected, refreshBalance]);
 
   if (!isConnected || !user) {
     return (
@@ -32,6 +40,13 @@ const Profile = () => {
   const copyAddress = () => {
     navigator.clipboard.writeText(user.walletAddress);
     toast({ title: "Address copied!" });
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await refreshBalance();
+    setRefreshing(false);
+    toast({ title: "Balance refreshed" });
   };
 
   return (
@@ -58,7 +73,12 @@ const Profile = () => {
         </div>
 
         <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 text-center">
-          <p className="text-xs text-muted-foreground mb-1">STRK Balance</p>
+          <div className="flex items-center justify-center gap-2 mb-1">
+            <p className="text-xs text-muted-foreground">STRK Balance</p>
+            <button onClick={handleRefresh} className="text-muted-foreground hover:text-primary">
+              <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+          </div>
           <p className="font-heading text-3xl font-bold text-primary">{user.strkBalance.toFixed(2)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">sepoliaTokens.STRK</p>
         </div>
