@@ -16,7 +16,17 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Stub optional peer dep that starkzap references but doesn't require
+      "@fatsolutions/tongo-sdk": path.resolve(__dirname, "./src/lib/tongo-stub.ts"),
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core", "framer-motion", "starknet"],
+  },
+  build: {
+    rollupOptions: {
+      onwarn(warning, warn) {
+        if (warning.message?.includes("tongo-sdk")) return;
+        warn(warning);
+      },
+    },
   },
 }));
