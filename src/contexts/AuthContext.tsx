@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Read real STRK balance
       const balance = await w.balanceOf(STRK);
       const balanceNum = parseFloat(balance.toUnit());
-      const address = w.address || (await w.getAddress?.()) || "0x...";
+      const address = w.address || "0x...";
 
       setUser({
         id: typeof address === "string" ? address : String(address),
