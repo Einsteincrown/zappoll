@@ -61,7 +61,7 @@ const PollDetail = () => {
     });
   }, []);
 
-
+  if (!poll) {
     return (
       <div className="container py-20 text-center">
         <p className="text-muted-foreground text-lg">Poll not found</p>
