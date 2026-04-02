@@ -15,9 +15,14 @@ export const LoginDialog: React.FC<LoginDialogProps> = ({ open, onOpenChange }) 
 
   const handleLogin = async (method: 'email' | 'google' | 'twitter') => {
     setLoading(true);
-    await login(method);
-    setLoading(false);
-    onOpenChange(false);
+    try {
+      await login(method);
+      onOpenChange(false);
+    } catch (err) {
+      console.error("Login failed:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
