@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core", "framer-motion", "starknet"],
   },
   optimizeDeps: {
-    include: ["@cartridge/controller", "starkzap"],
+    include: ["starkzap"],
   },
   build: {
     rollupOptions: {

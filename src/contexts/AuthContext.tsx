@@ -1,13 +1,13 @@
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { UserProfile } from "@/types/poll";
+import { usePrivy } from "@privy-io/react-auth";
 import { sdk, STRK } from "@/lib/starkzap";
-import { OnboardStrategy, Amount } from "starkzap";
 
 interface AuthContextType {
   user: UserProfile | null;
   wallet: any | null;
   isConnected: boolean;
-  login: (method: 'email' | 'google' | 'twitter') => Promise<void>;
+  login: () => void;
   logout: () => void;
   updateBalance: (delta: number) => void;
   refreshBalance: () => Promise<void>;
@@ -16,57 +16,60 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { ready, authenticated, user: privyUser, login: privyLogin, logout: privyLogout } = usePrivy();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [wallet, setWallet] = useState<any | null>(null);
 
+  // Sync Privy auth state to our user profile
+  useEffect(() => {
+    if (ready && authenticated && privyUser) {
+      const address = privyUser.wallet?.address || privyUser.id;
+      const email = privyUser.email?.address;
+      const loginMethod: 'email' | 'google' | 'twitter' =
+        privyUser.twitter ? 'twitter' : 'email';
+
+      setUser({
+        id: address,
+        walletAddress: address,
+        email,
+        loginMethod,
+        strkBalance: 0,
+      });
+
+      // TODO: Once Privy wallet can be used as Starkzap signer, wire it here
+      // For now we store a reference for future integration
+      if (privyUser.wallet) {
+        setWallet(privyUser.wallet);
+      }
+    } else if (ready && !authenticated) {
+      setUser(null);
+      setWallet(null);
+    }
+  }, [ready, authenticated, privyUser]);
+
+  // Refresh STRK balance if wallet is available
   const refreshBalance = useCallback(async () => {
     if (!wallet) return;
     try {
-      const balance = await wallet.balanceOf(STRK);
-      const balanceNum = parseFloat(balance.toUnit());
-      setUser((prev) => prev ? { ...prev, strkBalance: balanceNum } : null);
+      const balance = await wallet.balanceOf?.(STRK);
+      if (balance) {
+        const balanceNum = parseFloat(balance.toUnit());
+        setUser((prev) => prev ? { ...prev, strkBalance: balanceNum } : null);
+      }
     } catch (err) {
       console.error("Failed to refresh balance:", err);
     }
   }, [wallet]);
 
-  const login = useCallback(async (_method: 'email' | 'google' | 'twitter') => {
-    try {
-      // Use Cartridge Controller for social login via Starkzap Wallets module
-      const policies = [
-        { target: STRK.address, method: "transfer" },
-      ];
-
-      const onboard = await sdk.onboard({
-        strategy: OnboardStrategy.Cartridge,
-        cartridge: { policies },
-        deploy: "if_needed",
-      });
-
-      const w = onboard.wallet;
-      setWallet(w);
-
-      // Read real STRK balance
-      const balance = await w.balanceOf(STRK);
-      const balanceNum = parseFloat(balance.toUnit());
-      const address = w.address || "0x...";
-
-      setUser({
-        id: typeof address === "string" ? address : String(address),
-        walletAddress: typeof address === "string" ? address : String(address),
-        loginMethod: _method,
-        strkBalance: balanceNum,
-      });
-    } catch (err) {
-      console.error("Starkzap login failed:", err);
-      throw err;
-    }
-  }, []);
+  const login = useCallback(() => {
+    privyLogin();
+  }, [privyLogin]);
 
   const logout = useCallback(() => {
+    privyLogout();
     setUser(null);
     setWallet(null);
-  }, []);
+  }, [privyLogout]);
 
   const updateBalance = useCallback((delta: number) => {
     setUser((prev) => prev ? { ...prev, strkBalance: prev.strkBalance + delta } : null);
