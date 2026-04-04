@@ -3,7 +3,7 @@ import { usePolls } from "@/contexts/PollContext";
 import { LoginDialog } from "@/components/LoginDialog";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Zap, Copy, LogOut, CheckCircle, RefreshCw } from "lucide-react";
+import { Zap, Copy, LogOut, CheckCircle, RefreshCw, Droplets } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 
