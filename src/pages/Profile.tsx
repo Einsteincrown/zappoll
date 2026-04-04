@@ -82,6 +82,22 @@ const Profile = () => {
           <p className="font-heading text-3xl font-bold text-primary">{user.strkBalance.toFixed(2)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">sepoliaTokens.STRK</p>
         </div>
+
+        <Button
+          variant="outline"
+          className="w-full mt-4 border-primary/30 text-primary hover:bg-primary/10"
+          onClick={() => {
+            navigator.clipboard.writeText(user.walletAddress);
+            window.open("https://starknet-faucet.vercel.app/", "_blank");
+            toast({
+              title: "Faucet opened 🚰",
+              description: "Your address was copied — paste it in the faucet to receive 100 STRK. Refresh balance after.",
+            });
+          }}
+        >
+          <Droplets className="h-4 w-4 mr-2" />
+          Request Testnet STRK
+        </Button>
       </div>
 
       {/* Stats */}
