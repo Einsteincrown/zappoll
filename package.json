@@ -12,6 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
+  "overrides": {
+    "date-fns": "^3.6.0"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@privy-io/react-auth": "^3.18.0",
