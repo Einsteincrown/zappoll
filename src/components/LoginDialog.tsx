@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Zap, Mail, Twitter, Loader2, ArrowLeft } from "lucide-react";
+import { Zap, Mail, Loader2, ArrowLeft } from "lucide-react";
 
 interface LoginDialogProps {
   open: boolean;
