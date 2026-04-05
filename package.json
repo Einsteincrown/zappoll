@@ -16,6 +16,7 @@
     "date-fns": "^3.6.0"
   },
   "dependencies": {
+    "ethers": "^6.13.0",
     "@hookform/resolvers": "^3.10.0",
     "@privy-io/react-auth": "^3.18.0",
     "@radix-ui/react-accordion": "^1.2.11",
