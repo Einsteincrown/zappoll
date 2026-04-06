@@ -43,24 +43,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (authenticated && privyUser && !onboardingRef.current) {
       onboardingRef.current = true;
-      const userId = privyUser.wallet?.address || privyUser.id;
+      const authUserId = privyUser.id;
 
       const email = privyUser.email?.address;
       const loginMethod: "email" | "google" | "twitter" = privyUser.twitter
         ? "twitter"
         : "email";
 
-      // Set basic user info immediately (balance will update after onboard)
-      setUser({
-        id: userId,
-        walletAddress: userId,
-        email,
-        loginMethod,
-        strkBalance: 0,
-      });
-
       // Onboard with a local StarkSigner
-      const privateKey = getOrCreatePrivateKey(userId);
+      const privateKey = getOrCreatePrivateKey(authUserId);
       sdk
         .onboard({
           strategy: OnboardStrategy.Signer,
@@ -70,25 +61,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
         .then(async (result) => {
           const w = result.wallet;
+          const address = w.address;
+
+          if (!address || !address.startsWith("0x")) {
+            throw new Error(`Invalid Starknet wallet address returned: ${String(address)}`);
+          }
+
           setWallet(w);
 
-          // Update wallet address to the actual on-chain address
-          const address = w.address ?? userId;
-          setUser((prev) =>
-            prev ? { ...prev, id: address, walletAddress: address } : null
-          );
-
           // Fetch initial balance
+          let balanceNum = 0;
           try {
             const balance = await w.balanceOf(STRK);
-            const balanceNum = parseFloat(balance.toUnit());
-            setUser((prev) => (prev ? { ...prev, strkBalance: balanceNum } : null));
+            balanceNum = parseFloat(balance.toUnit());
           } catch (err) {
             console.warn("Initial balance fetch failed:", err);
           }
+
+          setUser({
+            id: address,
+            walletAddress: address,
+            email,
+            loginMethod,
+            strkBalance: balanceNum,
+          });
         })
         .catch((err) => {
           console.error("Starkzap onboard failed:", err);
+          setUser(null);
+          setWallet(null);
         })
         .finally(() => {
           onboardingRef.current = false;
@@ -128,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider
-      value={{ user, wallet, isConnected: !!user, login, logout, updateBalance, refreshBalance }}
+      value={{ user, wallet, isConnected: !!user && !!wallet, login, logout, updateBalance, refreshBalance }}
     >
       {children}
     </AuthContext.Provider>
