@@ -65,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .onboard({
           strategy: OnboardStrategy.Signer,
           account: { signer: new StarkSigner(privateKey) },
+          accountPreset: accountPresets.argentXV050,
           deploy: "if_needed",
         })
         .then(async (result) => {
