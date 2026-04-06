@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { PrivyProvider } from "@privy-io/react-auth";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PollProvider } from "@/contexts/PollContext";
+import { SoundProvider } from "@/contexts/SoundContext";
 import { Layout } from "@/components/Layout";
 import Index from "./pages/Index";
 import CreatePoll from "./pages/CreatePoll";
@@ -27,22 +28,24 @@ const App = () => (
   >
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AuthProvider>
-          <PollProvider>
-            <Toaster />
-            <BrowserRouter>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/create" element={<CreatePoll />} />
-                  <Route path="/poll/:id" element={<PollDetail />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
-            </BrowserRouter>
-          </PollProvider>
-        </AuthProvider>
+        <SoundProvider>
+          <AuthProvider>
+            <PollProvider>
+              <Toaster />
+              <BrowserRouter>
+                <Layout>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/create" element={<CreatePoll />} />
+                    <Route path="/poll/:id" element={<PollDetail />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Layout>
+              </BrowserRouter>
+            </PollProvider>
+          </AuthProvider>
+        </SoundProvider>
       </TooltipProvider>
     </QueryClientProvider>
   </PrivyProvider>

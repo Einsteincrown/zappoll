@@ -1,11 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
-import { Zap, Plus, User, Home } from "lucide-react";
+import { Zap, Plus, User, Home, Volume2, VolumeX } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSound } from "@/contexts/SoundContext";
 import { LoginDialog } from "./LoginDialog";
 import { useState } from "react";
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isConnected } = useAuth();
+  const { soundEnabled, toggleSound, playClick } = useSound();
   const location = useLocation();
   const [loginOpen, setLoginOpen] = useState(false);
 
@@ -43,7 +45,17 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                toggleSound();
+                playClick();
+              }}
+              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              title={soundEnabled ? "Mute sounds" : "Enable sounds"}
+            >
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </button>
             {isConnected ? (
               <Link to="/profile" className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted text-sm">
                 <div className="h-2 w-2 rounded-full bg-green-500" />
@@ -54,7 +66,10 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               </Link>
             ) : (
               <button
-                onClick={() => setLoginOpen(true)}
+                onClick={() => {
+                  playClick();
+                  setLoginOpen(true);
+                }}
                 className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold glow-orange hover:opacity-90 transition-opacity"
               >
                 Connect

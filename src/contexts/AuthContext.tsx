@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect, use
 import { UserProfile } from "@/types/poll";
 import { usePrivy } from "@privy-io/react-auth";
 import { sdk, STRK } from "@/lib/starkzap";
-import { StarkSigner, OnboardStrategy } from "starkzap";
+import { StarkSigner, OnboardStrategy, accountPresets } from "starkzap";
 
 const PRIVATE_KEY_STORAGE_KEY = "zappoll_stark_pk";
 
@@ -65,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .onboard({
           strategy: OnboardStrategy.Signer,
           account: { signer: new StarkSigner(privateKey) },
+          accountPreset: accountPresets.argentXV050,
           deploy: "if_needed",
         })
         .then(async (result) => {
