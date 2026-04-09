@@ -1,6 +1,6 @@
 ZapPoll
 
-An Onchain prediction polls built on Starknet. You get to stake STRK on the outcome you believe in winners split the pot.
+Onchain prediction polls built on Starknet. You get to stake STRK on the outcome you believe in, winners split the pot.
 
 ## Live Demo
 
