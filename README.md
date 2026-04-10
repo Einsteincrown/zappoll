@@ -30,6 +30,29 @@ Built for the Starkzap Developer Bounty.
 - Poll creation, voting, and resolution in one app
 - Fully deployed on Starknet Sepolia testnet
 
+- (## known issue: 
+
+Login Flow Inconsistency
+
+Users may experience inconsistent login success after authentication.
+
+The login button responds, but session persistence occasionally fails.
+
+Status:
+
+Auth flow is connected and triggers correctly
+
+Issue likely tied to session handling or state synchronization
+
+Next Steps:
+
+Refine session management logic
+
+Improve error handling and user feedback
+
+Continue debugging auth response flow
+)
+
 ## Tech Stack
 
 - React + TypeScript
