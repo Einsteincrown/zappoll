@@ -8,7 +8,7 @@ https://zappoll.vercel.app
 
 ## What is ZapPoll?
 
-ZapPoll is a lightweight prediction market where anyone can create a poll, stake STRK on an outcome, and earn from being right. No MetaMask, no seed phrases, no gas fees just sign in and start staking.
+ZapPoll is a lightweight prediction market where anyone can create a poll, stake STRK on an outcome, and earn from being right. 
 
 Built for the Starkzap Developer Bounty.
 
